@@ -1,0 +1,5 @@
+{
+  "name": "AquaSmart Monitor",
+  "description": "A modern, dark-mode Aquascape dashboard featuring real-time monitoring, fuzzy logic recommendations, historical data visualization, and comprehensive system settings.",
+  "requestFramePermissions": []
+}
