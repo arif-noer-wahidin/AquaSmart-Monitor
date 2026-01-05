@@ -9,7 +9,7 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ranges' | 'rules' | 'calibrations'>('ranges');
   const [ranges, setRanges] = useState<RangeDefinition[]>([]);
   const [rules, setRules] = useState<FuzzyRule[]>([]);
-  const [calibrations, setCalibrations] = useState<CalibrationData | null>(null);
+  const [calibrations, setCalibrations] = useState<CalibrationData>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
@@ -18,6 +18,16 @@ const Settings: React.FC = () => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  // Auto-dismiss success notifications after 3 seconds
+  useEffect(() => {
+    if (notification && notification.type === 'success') {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const loadData = async () => {
     setLoading(true);
@@ -80,9 +90,11 @@ const Settings: React.FC = () => {
     if (!checkAuth()) return;
     setSaving(true);
     try {
-      if (calibrations) {
+      if (calibrations.length > 0) {
         await updateCalibrations(calibrations);
-        await loadData(); // Reload data to confirm save
+        // Add a delay to ensure Google Sheet has time to process before reload
+        await new Promise(r => setTimeout(r, 2000));
+        await loadData();
         setNotification({ msg: "Calibrations updated successfully", type: 'success' });
       }
     } catch (error) {
@@ -104,10 +116,10 @@ const Settings: React.FC = () => {
     setRules(newRules);
   };
 
-  const handleCalibrationChange = (key: string, value: string) => {
-    if (calibrations) {
-      setCalibrations({ ...calibrations, [key]: value });
-    }
+  const handleCalibrationChange = (key: string, newValue: string) => {
+    setCalibrations(prev => prev.map(item => 
+      item.key === key ? { ...item, value: newValue } : item
+    ));
   };
 
   return (
@@ -115,7 +127,7 @@ const Settings: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight transition-colors">System Configuration</h1>
         {notification && (
-          <div className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${notification.type === 'success' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
+          <div className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 fade-in duration-300 ${notification.type === 'success' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'}`}>
             <AlertCircle className="w-4 h-4" />
             {notification.msg}
           </div>
@@ -282,19 +294,22 @@ const Settings: React.FC = () => {
               {activeTab === 'calibrations' && (
                 <div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {calibrations && Object.entries(calibrations).map(([key, value]) => (
-                      <div key={key} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
-                        <label className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-2">{key.replace(/_/g, ' ')}</label>
+                    {calibrations && calibrations.map((item, index) => (
+                      <div key={item.key || index} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
+                        <label className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">{item.key.replace(/_/g, ' ')}</label>
                         <input
                             type="text"
-                            value={value}
+                            value={item.value}
                             readOnly={!isAuthenticated}
-                            onChange={(e) => handleCalibrationChange(key, e.target.value)}
+                            onChange={(e) => handleCalibrationChange(item.key, e.target.value)}
                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-2 text-cyan-600 dark:text-cyan-400 font-mono focus:outline-none focus:border-cyan-500 transition-colors"
                         />
+                        {item.description && (
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 italic">{item.description}</p>
+                        )}
                       </div>
                     ))}
-                    {!calibrations && <div className="text-slate-500 col-span-full">No calibration data found.</div>}
+                    {calibrations.length === 0 && <div className="text-slate-500 col-span-full">No calibration data found.</div>}
                   </div>
                   <div className="mt-6 flex justify-end">
                     <button 

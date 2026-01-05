@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Brush } from 'recharts';
+import { 
+  LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  Legend, Brush
+} from 'recharts';
 import { Activity, Droplets, Thermometer, Zap, Clock, AlertTriangle, RefreshCw, Lock, Loader2 } from 'lucide-react';
 import { getRealtimeData, getHistoryData, setRelayStatus, setTimer } from '../services/api';
 import { RealtimeData, HistoryItem, HistoryPeriod } from '../types';
@@ -34,6 +38,36 @@ const SensorMetric: React.FC<{ label: string; value: string | number; unit: stri
   </div>
 );
 
+// Custom Tooltip
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-xl text-xs backdrop-blur-sm z-50 min-w-[150px]">
+        <p className="text-slate-500 dark:text-slate-400 mb-2 font-medium border-b border-slate-200 dark:border-slate-800 pb-1">
+          {payload[0].payload.fullDate}
+        </p>
+        <div className="space-y-1">
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2" style={{ color: entry.color }}>
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                {entry.name}:
+              </span>
+              <span className="font-bold font-mono text-slate-700 dark:text-slate-200">
+                {entry.value}
+                <span className="text-[10px] ml-0.5 opacity-70">
+                   {entry.name.includes('Suhu') ? '°C' : entry.name.includes('TDS') ? 'ppm' : ''}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 interface DashboardProps {
   isDark: boolean;
 }
@@ -63,17 +97,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
       setRealtime(data);
       setLastUpdated(new Date());
 
-      // Only update local timer state from server if the user IS NOT currently editing (simple heuristic or just overwrite)
-      // Here we overwrite to ensure sync, assuming user isn't mid-typing during a poll.
       const formatTime = (isoString: string) => {
         if (!isoString) return '';
         const d = new Date(isoString);
         return isNaN(d.getTime()) ? '' : d.toISOString().substring(11, 16);
       };
 
-      // We use a functional update or just direct set. 
-      // To prevent jumping cursor issues, typically we might verify if focused, 
-      // but for this implementation we sync data on fetch.
       const activeElement = document.activeElement;
       const isTimerFocused = activeElement instanceof HTMLInputElement && activeElement.type === 'time';
       
@@ -153,14 +182,11 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
 
     const newStatus = currentStatus === 'on' ? false : true;
     
-    // Set processing state for this specific relay
     setProcessing(prev => ({ ...prev, [relay]: true }));
 
     try {
-      // 1. Send command to server and WAIT for success
       await setRelayStatus(relay, newStatus);
-      
-      // 2. Fetch the absolute latest data from server to confirm state
+      await new Promise(r => setTimeout(r, 800));
       await fetchData(false); 
       
     } catch (error) {
@@ -171,19 +197,18 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
     }
   };
 
-  // Updates local state only (for smooth typing/picking)
   const handleTimerInput = (key: keyof typeof timers, value: string) => {
     setTimers(prev => ({ ...prev, [key]: value }));
   };
 
-  // Sends data to server (onBlur)
   const handleTimerSave = async (key: 'timer1On' | 'timer1Off' | 'timer2On' | 'timer2Off', value: string) => {
-    if (!isAuthenticated) return; // Auth check happens on focus usually, but double check
+    if (!isAuthenticated) return; 
     
     setProcessing(prev => ({ ...prev, [key]: true }));
     try {
       await setTimer(key, value);
-      await fetchData(false); // Sync everything
+      await new Promise(r => setTimeout(r, 800));
+      await fetchData(false);
     } catch (error) {
       console.error("Failed to set timer", error);
     } finally {
@@ -200,10 +225,19 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
     );
   }
 
-  // Chart Colors based on theme
-  const gridColor = isDark ? "#1e293b" : "#e2e8f0";
+  // Colors
+  const gridColor = isDark ? "#334155" : "#e2e8f0";
   const axisColor = isDark ? "#94a3b8" : "#64748b";
   const brushStroke = isDark ? "#475569" : "#cbd5e1";
+  const brushFill = isDark ? "#1e293b" : "#f1f5f9";
+  
+  // Custom Dot for Charts
+  const CustomDot = (props: any) => {
+    const { cx, cy, stroke, payload } = props;
+    return (
+      <circle cx={cx} cy={cy} r={3} stroke={stroke} strokeWidth={2} fill={isDark ? "#0f172a" : "#fff"} />
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -419,7 +453,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
         </Card>
       </div>
 
-      {/* History Charts */}
+      {/* History Charts - Combined Single Chart with Multi-Axis */}
       <Card title="Historical Data">
         <div className="flex gap-2 mb-6">
           {(['1hour', '1day', '1week'] as HistoryPeriod[]).map(p => (
@@ -437,91 +471,89 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
           ))}
         </div>
 
-        <div className="h-[400px] w-full -ml-2">
+        <div className="w-full h-[450px]">
           {loading ? (
              <div className="h-full flex items-center justify-center text-slate-500">Loading chart data...</div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} opacity={0.4} vertical={false} />
+             <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history} margin={{ top: 20, right: 10, left: 10, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} opacity={0.1} vertical={true} />
                 <XAxis 
                   dataKey="displayTime" 
                   stroke={axisColor} 
-                  tick={{ fill: axisColor, fontSize: 11 }} 
+                  tick={{ fill: axisColor, fontSize: 12 }} 
                   minTickGap={40}
                   tickMargin={10}
                 />
                 
-                {/* Temp Axis (Left) */}
+                {/* 1. Suhu Axis (Left) */}
                 <YAxis 
-                  yAxisId="suhu"
-                  orientation="left"
-                  stroke="#fb7185" 
-                  tick={{ fill: "#fb7185", fontSize: 11 }}
-                  tickFormatter={(val) => `${val}°`}
+                  yAxisId="left"
+                  orientation="left" 
+                  stroke="#f43f5e" 
+                  tick={{ fill: "#f43f5e", fontSize: 12 }}
                   domain={['auto', 'auto']}
-                  width={40}
-                  axisLine={false}
-                />
-                
-                {/* TDS Axis (Right) */}
-                <YAxis 
-                  yAxisId="tds"
-                  orientation="right"
-                  stroke="#34d399" 
-                  tick={{ fill: "#34d399", fontSize: 11 }}
-                  domain={['auto', 'auto']}
-                  width={40}
-                  axisLine={false}
+                  label={{ value: 'Suhu (°C)', angle: -90, position: 'insideLeft', fill: '#f43f5e', fontSize: 12 }}
                 />
 
-                {/* pH Axis (Hidden but auto-scaled) */}
+                {/* 2. pH Axis (Right) */}
                 <YAxis 
-                  yAxisId="ph"
-                  orientation="right"
+                  yAxisId="right_ph"
+                  orientation="right" 
+                  stroke="#06b6d4" 
+                  tick={{ fill: "#06b6d4", fontSize: 12 }}
                   domain={['auto', 'auto']}
-                  hide
+                  label={{ value: 'pH', angle: 90, position: 'insideRight', fill: '#06b6d4', fontSize: 12 }}
                 />
 
-                <Tooltip 
-                   content={({ active, payload, label }) => {
-                        if (active && payload && payload.length) {
-                            return (
-                                <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-xl text-xs backdrop-blur-sm">
-                                    <p className="text-slate-500 dark:text-slate-400 mb-2 font-medium">{payload[0].payload.fullDate}</p>
-                                    {payload.map((entry: any) => (
-                                        <div key={entry.name} className="flex items-center justify-between gap-4 mb-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: entry.color }}></div>
-                                                <span className="text-slate-600 dark:text-slate-300 font-medium">{entry.name}</span>
-                                            </div>
-                                            <span className="text-slate-900 dark:text-slate-100 font-bold font-mono">
-                                                {entry.value}
-                                                <span className="text-slate-400 dark:text-slate-500 ml-1 font-normal">
-                                                    {entry.name === 'Temp' ? '°C' : entry.name === 'TDS' ? 'ppm' : 'pH'}
-                                                </span>
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            );
-                        }
-                        return null;
-                    }}
+                {/* 3. TDS Axis (Right - Invisible Axis Line/Ticks but scaled correctly) */}
+                <YAxis 
+                  yAxisId="right_tds"
+                  orientation="right" 
+                  domain={['auto', 'auto']}
+                  hide // Hide axis visual elements to avoid overlap, but keep scaling logic
                 />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                
-                <Line yAxisId="suhu" type="monotone" dataKey="suhu" name="Temp" stroke="#fb7185" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: "#fb7185" }} animationDuration={1000} />
-                <Line yAxisId="ph" type="monotone" dataKey="ph" name="pH" stroke="#22d3ee" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: "#22d3ee" }} animationDuration={1000} />
-                <Line yAxisId="tds" type="monotone" dataKey="tds" name="TDS" stroke="#34d399" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: "#34d399" }} animationDuration={1000} />
-                
+
+                <Tooltip content={<CustomTooltip />} />
+                <Legend verticalAlign="top" height={36} iconType="square" />
+
+                <Line 
+                  yAxisId="left"
+                  type="monotone" 
+                  dataKey="suhu" 
+                  name="Suhu (°C)"
+                  stroke="#f43f5e" 
+                  strokeWidth={2}
+                  dot={<CustomDot />}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  yAxisId="right_ph"
+                  type="monotone" 
+                  dataKey="ph" 
+                  name="pH"
+                  stroke="#06b6d4" 
+                  strokeWidth={2}
+                  dot={<CustomDot />}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  yAxisId="right_tds"
+                  type="monotone" 
+                  dataKey="tds" 
+                  name="TDS (ppm)"
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  dot={<CustomDot />}
+                  activeDot={{ r: 6 }}
+                />
                 <Brush 
-                    dataKey="displayTime" 
-                    height={30} 
-                    stroke={brushStroke}
-                    fill="transparent"
-                    tickFormatter={() => ""}
-                    travellerWidth={10}
+                  dataKey="displayTime" 
+                  height={30} 
+                  stroke={brushStroke}
+                  fill={brushFill}
+                  tickFormatter={() => ""}
+                  travellerWidth={10}
                 />
               </LineChart>
             </ResponsiveContainer>

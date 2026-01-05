@@ -40,9 +40,13 @@ export interface FuzzyRule {
   'Aksi Direkomendasikan': string;
 }
 
-export interface CalibrationData {
-  [key: string]: string;
+export interface CalibrationItem {
+  key: string;
+  value: string;
+  description: string;
 }
+
+export type CalibrationData = CalibrationItem[];
 
 export type HistoryPeriod = '1hour' | '1day' | '1week';
 
