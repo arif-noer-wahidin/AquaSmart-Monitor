@@ -10,6 +10,16 @@ export const onRequest = async (context: { request: Request; env: Env }) => {
   }
 
   const url = new URL(request.url);
+
+  // Validation: If it's a GET request, require an 'action' parameter.
+  // This prevents direct browser access to /api/proxy from returning a generic success from GAS
+  // or confusing the frontend.
+  if (request.method === 'GET' && !url.searchParams.has('action')) {
+     return new Response(JSON.stringify({ status: 'error', message: 'Missing action parameter' }), { 
+       status: 400,
+       headers: { "Content-Type": "application/json" }
+     });
+  }
   
   // Prepare the target URL (Google Apps Script)
   const targetUrl = new URL(env.GAS_API_URL);

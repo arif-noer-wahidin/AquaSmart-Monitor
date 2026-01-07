@@ -4,11 +4,15 @@ import { LayoutDashboard, Settings as SettingsIcon, Fish, Sun, Moon, LogIn, LogO
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import LoginModal from './components/LoginModal';
+import NotFound from './components/NotFound';
 import { useAuth } from './contexts/AuthContext';
 
 const App: React.FC = () => {
   const [isDark, setIsDark] = useState(true);
   const { isAuthenticated, logout, openLoginModal } = useAuth();
+  
+  // State to track if the browser URL path is invalid (not root)
+  const [isPathError, setIsPathError] = useState(false);
 
   useEffect(() => {
     // Check local storage or default to dark
@@ -19,6 +23,18 @@ const App: React.FC = () => {
     } else {
       setIsDark(true);
       document.documentElement.classList.add('dark');
+    }
+
+    // PATH CHECK LOGIC:
+    // Since we use HashRouter, the real path should always be "/" or "/index.html".
+    // If the server falls back to index.html for a path like "/api/proxy" or "/random", 
+    // we want to show 404 instead of the Dashboard.
+    const path = window.location.pathname;
+    // Normalize path by removing trailing slashes
+    const normalizedPath = path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path;
+    
+    if (normalizedPath !== '/' && normalizedPath !== '/index.html') {
+      setIsPathError(true);
     }
   }, []);
 
@@ -33,6 +49,11 @@ const App: React.FC = () => {
       localStorage.setItem('theme', 'light');
     }
   };
+
+  // If the browser path is invalid (e.g. /api/proxy hitting the frontend), render NotFound immediately
+  if (isPathError) {
+    return <NotFound />;
+  }
 
   return (
     <HashRouter>
@@ -55,6 +76,7 @@ const App: React.FC = () => {
                 <div className="hidden md:flex space-x-2">
                   <NavLink 
                     to="/" 
+                    end
                     className={({ isActive }) => 
                       `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         isActive 
@@ -123,6 +145,7 @@ const App: React.FC = () => {
           <div className="grid grid-cols-2 h-16">
              <NavLink 
               to="/" 
+              end
               className={({ isActive }) => 
                 `flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
                   isActive ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
@@ -151,6 +174,8 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Dashboard isDark={isDark} />} />
             <Route path="/settings" element={<Settings />} />
+            {/* Catch all for invalid hash routes */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
 
