@@ -6,23 +6,23 @@ import {
 } from 'recharts';
 import { Activity, Droplets, Thermometer, Zap, Clock, AlertTriangle, RefreshCw, Lock, Loader2, Download } from 'lucide-react';
 import { getRealtimeData, getHistoryData, setRelayStatus, setTimer } from '../services/api';
-import { RealtimeData, HistoryItem, HistoryPeriod } from '../types';
+import { RealtimeData } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 const Card: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className = '' }) => (
-  <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden transition-colors duration-300 ${className}`}>
+  <section className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden transition-colors duration-300 ${className}`}>
     <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center transition-colors duration-300">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
     </div>
     <div className="p-6">
       {children}
     </div>
-  </div>
+  </section>
 );
 
 const SensorMetric: React.FC<{ label: string; value: string | number; unit: string; status: string; icon: React.ReactNode; color: string; bgColor: string }> = ({ label, value, unit, status, icon, color, bgColor }) => (
-  <div className="flex items-center p-4 bg-white dark:bg-slate-800/30 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors duration-300">
-    <div className={`p-3 rounded-full ${bgColor} dark:bg-slate-900 ${color} mr-4 transition-colors duration-300`}>
+  <div className="flex items-center p-4 bg-white dark:bg-slate-800/30 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors duration-300" role="status" aria-label={`${label}: ${value}${unit}, Status: ${status}`}>
+    <div className={`p-3 rounded-full ${bgColor} dark:bg-slate-900 ${color} mr-4 transition-colors duration-300`} aria-hidden="true">
       {icon}
     </div>
     <div>
@@ -76,12 +76,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
   const { isAuthenticated, openLoginModal } = useAuth();
   const [realtime, setRealtime] = useState<RealtimeData | null>(null);
   const [history, setHistory] = useState<any[]>([]);
-  const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>('1hour');
+  const [historyPeriod, setHistoryPeriod] = useState<'1hour' | '1day' | '1week'>('1hour');
   
   // Loading states
-  const [loading, setLoading] = useState(true); // Initial/History load
   const [refreshing, setRefreshing] = useState(false); // Background refresh
   const [processing, setProcessing] = useState<{[key: string]: boolean}>({}); // Button specific loading
+  const [chartLoading, setChartLoading] = useState(true);
 
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
@@ -123,7 +123,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
   }, []);
 
   const fetchHistory = useCallback(async () => {
-    setLoading(true);
+    setChartLoading(true);
     try {
       const data = await getHistoryData(historyPeriod);
       // Ensure numeric values and formatted time
@@ -155,7 +155,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
     } catch (error) {
       console.error("Failed to fetch history", error);
     } finally {
-      setLoading(false);
+      setChartLoading(false);
     }
   }, [historyPeriod]);
 
@@ -255,9 +255,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
 
   if (!realtime) {
     return (
-      <div className="flex h-full items-center justify-center p-20 text-slate-500">
-        <RefreshCw className="w-8 h-8 animate-spin mb-2" />
-        <span>Connecting to Aquascape...</span>
+      <div className="flex flex-col h-[50vh] items-center justify-center p-20 text-slate-500">
+        <RefreshCw className="w-8 h-8 animate-spin mb-4" />
+        <span className="text-lg">Connecting to Aquascape...</span>
       </div>
     );
   }
@@ -279,27 +279,32 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header Info */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight transition-colors">Dashboard Overview</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm">Last synced: {lastUpdated.toLocaleTimeString()}</p>
         </div>
         <div className="flex gap-2">
-             <button onClick={() => fetchData(true)} disabled={refreshing} className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-cyan-600 dark:text-cyan-400 transition-colors shadow-sm">
-                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+             <button 
+                onClick={() => fetchData(true)} 
+                disabled={refreshing} 
+                aria-label="Refresh Data"
+                className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-cyan-600 dark:text-cyan-400 transition-colors shadow-sm"
+             >
+                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
              </button>
         </div>
-      </div>
+      </header>
 
       {/* Fuzzy Logic Recommendation Banner */}
-      <div className="bg-gradient-to-r from-indigo-100 to-white dark:from-indigo-900/50 dark:to-slate-900/50 border border-indigo-200 dark:border-indigo-500/30 rounded-xl p-6 shadow-lg relative overflow-hidden transition-colors duration-300">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
+      <section aria-label="AI Recommendation" className="bg-gradient-to-r from-indigo-100 to-white dark:from-indigo-900/50 dark:to-slate-900/50 border border-indigo-200 dark:border-indigo-500/30 rounded-xl p-6 shadow-lg relative overflow-hidden transition-colors duration-300">
+        <div className="absolute top-0 right-0 p-4 opacity-10" aria-hidden="true">
           <Activity size={100} className="text-indigo-900 dark:text-indigo-100" />
         </div>
         <div className="relative z-10">
           <h3 className="text-indigo-600 dark:text-indigo-300 font-semibold mb-1 uppercase tracking-wider text-xs">AI Recommendation</h3>
           <div className="flex items-start gap-3">
-            <AlertTriangle className="text-indigo-500 dark:text-indigo-400 mt-1 flex-shrink-0" />
+            <AlertTriangle className="text-indigo-500 dark:text-indigo-400 mt-1 flex-shrink-0" aria-hidden="true" />
             <div>
                <p className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white leading-tight">
                  {realtime.fuzzy_rekomendasi || "Evaluating system status..."}
@@ -310,37 +315,43 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Sensors Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SensorMetric 
-          label="Temperature" 
-          value={realtime.suhu} 
-          unit="°C" 
-          status={realtime.suhu_status} 
-          icon={<Thermometer className="w-6 h-6 text-rose-500 dark:text-rose-400" />}
-          color="text-rose-500 dark:text-rose-400"
-          bgColor="bg-rose-100"
-        />
-        <SensorMetric 
-          label="pH Level" 
-          value={realtime.ph} 
-          unit="pH" 
-          status={realtime.ph_status} 
-          icon={<Droplets className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />}
-          color="text-cyan-600 dark:text-cyan-400"
-          bgColor="bg-cyan-100"
-        />
-        <SensorMetric 
-          label="TDS" 
-          value={realtime.tds} 
-          unit="ppm" 
-          status={realtime.tds_status} 
-          icon={<Activity className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />}
-          color="text-emerald-600 dark:text-emerald-400"
-          bgColor="bg-emerald-100"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6" role="list">
+        <div role="listitem">
+          <SensorMetric 
+            label="Temperature" 
+            value={realtime.suhu} 
+            unit="°C" 
+            status={realtime.suhu_status} 
+            icon={<Thermometer className="w-6 h-6 text-rose-500 dark:text-rose-400" />}
+            color="text-rose-500 dark:text-rose-400"
+            bgColor="bg-rose-100"
+          />
+        </div>
+        <div role="listitem">
+          <SensorMetric 
+            label="pH Level" 
+            value={realtime.ph} 
+            unit="pH" 
+            status={realtime.ph_status} 
+            icon={<Droplets className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />}
+            color="text-cyan-600 dark:text-cyan-400"
+            bgColor="bg-cyan-100"
+          />
+        </div>
+        <div role="listitem">
+          <SensorMetric 
+            label="TDS" 
+            value={realtime.tds} 
+            unit="ppm" 
+            status={realtime.tds_status} 
+            icon={<Activity className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />}
+            color="text-emerald-600 dark:text-emerald-400"
+            bgColor="bg-emerald-100"
+          />
+        </div>
       </div>
 
       {/* Control Panel */}
@@ -350,7 +361,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Zap className={`w-8 h-8 ${realtime.relay1 === 'on' ? 'text-yellow-500 fill-yellow-500/20 dark:text-yellow-400 dark:fill-yellow-400/20' : 'text-slate-400 dark:text-slate-600'}`} />
+                <Zap className={`w-8 h-8 ${realtime.relay1 === 'on' ? 'text-yellow-500 fill-yellow-500/20 dark:text-yellow-400 dark:fill-yellow-400/20' : 'text-slate-400 dark:text-slate-600'}`} aria-hidden="true" />
                 <div>
                   <h4 className="font-semibold text-slate-800 dark:text-slate-200">Main Relay 1</h4>
                   <span className={`text-xs ${realtime.relay1 === 'on' ? 'text-green-600 dark:text-green-400' : 'text-slate-500'}`}>
@@ -361,6 +372,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
               <button 
                 onClick={() => handleRelayToggle('relay1', realtime.relay1)}
                 disabled={processing['relay1']}
+                aria-label={`Toggle Relay 1. Current status: ${realtime.relay1}`}
                 className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${realtime.relay1 === 'on' ? 'bg-cyan-600' : 'bg-slate-300 dark:bg-slate-700'} ${processing['relay1'] ? 'opacity-70 cursor-wait' : ''}`}
               >
                 {processing['relay1'] ? (
@@ -378,21 +390,24 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
                 <div 
                     onClick={openLoginModal}
                     className="absolute inset-0 bg-slate-100/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-lg"
+                    aria-label="Locked. Click to Login."
+                    role="button"
                 >
                     <div className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        <Lock className="w-3 h-3" /> Login to Edit
+                        <Lock className="w-3 h-3" aria-hidden="true" /> Login to Edit
                     </div>
                 </div>
               )}
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
-                <Clock className="w-4 h-4" />
+                <Clock className="w-4 h-4" aria-hidden="true" />
                 <span className="text-sm font-medium">Schedule</span>
                 {(processing['timer1On'] || processing['timer1Off']) && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Start Time</label>
+                  <label htmlFor="t1On" className="text-xs text-slate-500 mb-1 block">Start Time</label>
                   <input 
+                    id="t1On"
                     type="time" 
                     value={timers.t1On} 
                     onClick={(e) => !isAuthenticated && openLoginModal()}
@@ -402,8 +417,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Stop Time</label>
+                  <label htmlFor="t1Off" className="text-xs text-slate-500 mb-1 block">Stop Time</label>
                   <input 
+                    id="t1Off"
                     type="time" 
                     value={timers.t1Off} 
                     onClick={(e) => !isAuthenticated && openLoginModal()}
@@ -422,7 +438,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Zap className={`w-8 h-8 ${realtime.relay2 === 'on' ? 'text-yellow-500 fill-yellow-500/20 dark:text-yellow-400 dark:fill-yellow-400/20' : 'text-slate-400 dark:text-slate-600'}`} />
+                <Zap className={`w-8 h-8 ${realtime.relay2 === 'on' ? 'text-yellow-500 fill-yellow-500/20 dark:text-yellow-400 dark:fill-yellow-400/20' : 'text-slate-400 dark:text-slate-600'}`} aria-hidden="true" />
                 <div>
                   <h4 className="font-semibold text-slate-800 dark:text-slate-200">Aux Relay 2</h4>
                   <span className={`text-xs ${realtime.relay2 === 'on' ? 'text-green-600 dark:text-green-400' : 'text-slate-500'}`}>
@@ -433,6 +449,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
               <button 
                 onClick={() => handleRelayToggle('relay2', realtime.relay2)}
                 disabled={processing['relay2']}
+                aria-label={`Toggle Relay 2. Current status: ${realtime.relay2}`}
                 className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${realtime.relay2 === 'on' ? 'bg-cyan-600' : 'bg-slate-300 dark:bg-slate-700'} ${processing['relay2'] ? 'opacity-70 cursor-wait' : ''}`}
               >
                 {processing['relay2'] ? (
@@ -450,21 +467,24 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
                 <div 
                     onClick={openLoginModal}
                     className="absolute inset-0 bg-slate-100/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-lg"
+                    aria-label="Locked. Click to Login."
+                    role="button"
                 >
                     <div className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        <Lock className="w-3 h-3" /> Login to Edit
+                        <Lock className="w-3 h-3" aria-hidden="true" /> Login to Edit
                     </div>
                 </div>
               )}
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
-                <Clock className="w-4 h-4" />
+                <Clock className="w-4 h-4" aria-hidden="true" />
                 <span className="text-sm font-medium">Schedule</span>
                 {(processing['timer2On'] || processing['timer2Off']) && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Start Time</label>
+                  <label htmlFor="t2On" className="text-xs text-slate-500 mb-1 block">Start Time</label>
                   <input 
+                    id="t2On"
                     type="time" 
                     value={timers.t2On} 
                     onClick={(e) => !isAuthenticated && openLoginModal()}
@@ -474,8 +494,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Stop Time</label>
+                  <label htmlFor="t2Off" className="text-xs text-slate-500 mb-1 block">Stop Time</label>
                   <input 
+                    id="t2Off"
                     type="time" 
                     value={timers.t2Off} 
                     onClick={(e) => !isAuthenticated && openLoginModal()}
@@ -494,10 +515,11 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
       <Card title="Historical Data">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex gap-2">
-            {(['1hour', '1day', '1week'] as HistoryPeriod[]).map(p => (
+            {(['1hour', '1day', '1week'] as const).map(p => (
               <button
                 key={p}
                 onClick={() => setHistoryPeriod(p)}
+                aria-pressed={historyPeriod === p}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   historyPeriod === p 
                   ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20' 
@@ -511,17 +533,21 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
 
           <button
             onClick={handleExportCSV}
-            disabled={loading || history.length === 0}
+            disabled={chartLoading || history.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            aria-label="Export Data as CSV"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
           </button>
         </div>
 
         <div className="w-full h-[450px] min-w-0">
-          {loading ? (
-             <div className="h-full flex items-center justify-center text-slate-500">Loading chart data...</div>
+          {chartLoading ? (
+             <div className="h-full flex items-center justify-center text-slate-500">
+                <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                Loading chart data...
+             </div>
           ) : (
              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={history} margin={{ top: 20, right: 10, left: 10, bottom: 40 }}>

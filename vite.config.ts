@@ -6,5 +6,14 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['lucide-react', 'recharts'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
   },
 });

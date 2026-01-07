@@ -2,8 +2,6 @@
 
 **Next-Generation IoT Dashboard for Smart Aquascape & Aquarium Management**
 
-![Project Banner](https://via.placeholder.com/1200x400?text=AquaSmart+Monitor+Dashboard)
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -14,6 +12,10 @@
 **AquaSmart Monitor** is a comprehensive, open-source web application designed to automate the monitoring and control of aquatic ecosystems. By leveraging **Fuzzy Logic AI**, it analyzes water quality parameters (Temperature, pH, TDS) in real-time to provide actionable insights, ensuring optimal health for your flora and fauna.
 
 Designed for hobbyists and professionals, this system utilizes a **serverless architecture** (Google Apps Script & Sheets) to provide a powerful, zero-cost backend solution.
+
+### 🌐 Official Links & Resources
+*   **Aquascape Information & Plants**: [https://www.tanamanaquascape.id](https://www.tanamanaquascape.id)
+*   **Developer Portfolio**: [https://www.arifnoerwahidin.my.id](https://www.arifnoerwahidin.my.id)
 
 ---
 
@@ -106,7 +108,7 @@ npm run dev
 This project uses a Proxy to communicate with Google Apps Script to avoid CORS issues and hide the backend URL.
 
 **For Local Development:**
-Create a `.env` file (or hardcode in `functions/api/proxy.ts` strictly for testing, though not recommended):
+Create a `.env` file in the root directory.
 
 **For Production (Cloudflare Pages):**
 1.  Deploy your repo to Cloudflare Pages.
@@ -115,18 +117,6 @@ Create a `.env` file (or hardcode in `functions/api/proxy.ts` strictly for testi
     *   `GAS_API_URL`: Your Google Apps Script Web App URL.
     *   `ADMIN_USER`: Your desired admin username.
     *   `ADMIN_PASS`: Your desired admin password.
-
----
-
-## 📸 Screenshots
-
-| Dashboard Light Mode | Dashboard Dark Mode |
-|:---:|:---:|
-| ![Light Mode](https://via.placeholder.com/400x250?text=Light+Mode) | ![Dark Mode](https://via.placeholder.com/400x250?text=Dark+Mode) |
-
-| Historical Charts | Settings & Calibration |
-|:---:|:---:|
-| ![Charts](https://via.placeholder.com/400x250?text=Charts) | ![Settings](https://via.placeholder.com/400x250?text=Settings) |
 
 ---
 
@@ -147,5 +137,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ---
 
 <p align="center">
-  Built with ❤️ by <a href="https://github.com/yourusername">Your Name</a>
+  Built with ❤️ by <a href="https://www.arifnoerwahidin.my.id">Arif Noer Wahidin</a>
 </p>

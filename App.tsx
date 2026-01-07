@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { LayoutDashboard, Settings as SettingsIcon, Fish, Sun, Moon, LogIn, LogOut, Lock } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import Settings from './components/Settings';
-import LoginModal from './components/LoginModal';
-import NotFound from './components/NotFound';
 import { useAuth } from './contexts/AuthContext';
+import LoadingFallback from './components/LoadingFallback';
+
+// Lazy Load Pages to reduce initial bundle size
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Settings = lazy(() => import('./components/Settings'));
+const LoginModal = lazy(() => import('./components/LoginModal'));
+const NotFound = lazy(() => import('./components/NotFound'));
 
 const App: React.FC = () => {
   const [isDark, setIsDark] = useState(true);
   const { isAuthenticated, logout, openLoginModal } = useAuth();
-  
-  // State to track if the browser URL path is invalid (not root)
   const [isPathError, setIsPathError] = useState(false);
 
   useEffect(() => {
-    // Check local storage or default to dark
     const stored = localStorage.getItem('theme');
     if (stored === 'light') {
       setIsDark(false);
@@ -25,12 +25,7 @@ const App: React.FC = () => {
       document.documentElement.classList.add('dark');
     }
 
-    // PATH CHECK LOGIC:
-    // Since we use HashRouter, the real path should always be "/" or "/index.html".
-    // If the server falls back to index.html for a path like "/api/proxy" or "/random", 
-    // we want to show 404 instead of the Dashboard.
     const path = window.location.pathname;
-    // Normalize path by removing trailing slashes
     const normalizedPath = path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path;
     
     if (normalizedPath !== '/' && normalizedPath !== '/index.html') {
@@ -50,16 +45,21 @@ const App: React.FC = () => {
     }
   };
 
-  // If the browser path is invalid (e.g. /api/proxy hitting the frontend), render NotFound immediately
   if (isPathError) {
-    return <NotFound />;
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <NotFound />
+      </Suspense>
+    );
   }
 
   return (
     <HashRouter>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans selection:bg-cyan-500 selection:text-white pb-20 md:pb-0 transition-colors duration-300">
         
-        <LoginModal />
+        <Suspense fallback={null}>
+          <LoginModal />
+        </Suspense>
 
         {/* Top Navbar for Desktop */}
         <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
@@ -67,13 +67,13 @@ const App: React.FC = () => {
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg shadow-lg shadow-cyan-500/20">
-                  <Fish className="w-6 h-6 text-white" />
+                  <Fish className="w-6 h-6 text-white" aria-hidden="true" />
                 </div>
                 <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">Aqua<span className="text-cyan-600 dark:text-cyan-400">Smart</span></span>
               </div>
               
               <div className="flex items-center gap-4">
-                <div className="hidden md:flex space-x-2">
+                <div className="hidden md:flex space-x-2" role="navigation" aria-label="Desktop Navigation">
                   <NavLink 
                     to="/" 
                     end
@@ -85,7 +85,7 @@ const App: React.FC = () => {
                       }`
                     }
                   >
-                    <LayoutDashboard className="w-4 h-4" />
+                    <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
                     Dashboard
                   </NavLink>
                   <NavLink 
@@ -98,16 +98,17 @@ const App: React.FC = () => {
                       }`
                     }
                   >
-                    <SettingsIcon className="w-4 h-4" />
+                    <SettingsIcon className="w-4 h-4" aria-hidden="true" />
                     Settings
                   </NavLink>
                 </div>
 
-                <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-2 hidden md:block"></div>
+                <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-2 hidden md:block" aria-hidden="true"></div>
 
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={isAuthenticated ? logout : openLoginModal}
+                    aria-label={isAuthenticated ? "Logout" : "Admin Login"}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isAuthenticated 
                       ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40' 
@@ -116,12 +117,12 @@ const App: React.FC = () => {
                   >
                     {isAuthenticated ? (
                       <>
-                        <LogOut className="w-4 h-4" />
+                        <LogOut className="w-4 h-4" aria-hidden="true" />
                         <span className="hidden sm:inline">Logout</span>
                       </>
                     ) : (
                       <>
-                        <Lock className="w-4 h-4" />
+                        <Lock className="w-4 h-4" aria-hidden="true" />
                         <span className="hidden sm:inline">Admin</span>
                       </>
                     )}
@@ -130,9 +131,9 @@ const App: React.FC = () => {
                   <button 
                     onClick={toggleTheme}
                     className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
-                    aria-label="Toggle Theme"
+                    aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
                   >
-                    {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    {isDark ? <Sun className="w-5 h-5" aria-hidden="true" /> : <Moon className="w-5 h-5" aria-hidden="true" />}
                   </button>
                 </div>
               </div>
@@ -141,7 +142,7 @@ const App: React.FC = () => {
         </nav>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-safe transition-colors duration-300">
+        <nav className="md:hidden fixed bottom-0 w-full z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-safe transition-colors duration-300" role="navigation" aria-label="Mobile Navigation">
           <div className="grid grid-cols-2 h-16">
              <NavLink 
               to="/" 
@@ -152,7 +153,7 @@ const App: React.FC = () => {
                 }`
               }
             >
-              <LayoutDashboard className="w-6 h-6" />
+              <LayoutDashboard className="w-6 h-6" aria-hidden="true" />
               Dashboard
             </NavLink>
              <NavLink 
@@ -163,20 +164,21 @@ const App: React.FC = () => {
                 }`
               }
             >
-              <SettingsIcon className="w-6 h-6" />
+              <SettingsIcon className="w-6 h-6" aria-hidden="true" />
               Settings
             </NavLink>
           </div>
         </nav>
 
-        {/* Main Content */}
+        {/* Main Content with Suspense */}
         <main className="pt-20 md:pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Routes>
-            <Route path="/" element={<Dashboard isDark={isDark} />} />
-            <Route path="/settings" element={<Settings />} />
-            {/* Catch all for invalid hash routes */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<Dashboard isDark={isDark} />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </main>
 
       </div>
