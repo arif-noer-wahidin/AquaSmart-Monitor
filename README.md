@@ -1,130 +1,151 @@
 # 🌿 AquaSmart Monitor
 
-**Modern IoT Dashboard for Aquascape & Aquarium Monitoring**
+**Next-Generation IoT Dashboard for Smart Aquascape & Aquarium Management**
 
-AquaSmart Monitor is a robust, real-time web dashboard designed to monitor and control aquascape ecosystems. Built with **React** and **TypeScript**, it integrates seamlessly with **Google Apps Script (GAS)** and **Google Sheets** as a serverless backend and database. 
+![Project Banner](https://via.placeholder.com/1200x400?text=AquaSmart+Monitor+Dashboard)
 
-The system features advanced visualization with multi-axis charts, fuzzy logic-based AI recommendations for water quality, and remote device control.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript_5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Build-Vite_5-646CFF?logo=vite)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind_CSS-38B2AC?logo=tailwindcss)](https://tailwindcss.com/)
+[![Backend](https://img.shields.io/badge/Backend-Google_Apps_Script-4285F4?logo=google-sheets)](https://developers.google.com/apps-script)
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![React](https://img.shields.io/badge/frontend-React_19-61DAFB.svg)
-![TypeScript](https://img.shields.io/badge/language-TypeScript-3178C6.svg)
-![Tailwind](https://img.shields.io/badge/style-Tailwind_CSS-38B2AC.svg)
-![Backend](https://img.shields.io/badge/backend-Google_Apps_Script-4285F4.svg)
+**AquaSmart Monitor** is a comprehensive, open-source web application designed to automate the monitoring and control of aquatic ecosystems. By leveraging **Fuzzy Logic AI**, it analyzes water quality parameters (Temperature, pH, TDS) in real-time to provide actionable insights, ensuring optimal health for your flora and fauna.
 
-## ✨ Key Features
+Designed for hobbyists and professionals, this system utilizes a **serverless architecture** (Google Apps Script & Sheets) to provide a powerful, zero-cost backend solution.
 
-### 📊 Real-time Monitoring
-- **Live Sensors:** Displays real-time data for Temperature (°C), pH, and TDS (ppm).
-- **Status Indicators:** Visual cues (Green/Amber/Red) indicating if parameters are within ideal ranges.
+---
 
-### 🧠 Intelligent Analysis (Fuzzy Logic)
-- **AI Recommendations:** Uses a fuzzy logic algorithm embedded in the backend to analyze sensor data combinations.
-- **Actionable Insights:** Provides specific advice (e.g., "Water quality is good" or "Check heater") based on the fuzzy inference system.
+## 🚀 Key Features
 
-### 📈 Historical Data Visualization
-- **Multi-Axis Line Chart:** Visualizes Temperature, pH, and TDS on a single synchronized chart with independent Y-axes.
-- **Zoom & Pan:** Includes a brush/slider tool to zoom into specific timeframes (1 Hour, 1 Day, 1 Week) to analyze data density without overlap.
-- **Responsive Design:** Charts adapt to screen size and theme.
+### 📊 Real-Time Water Quality Monitoring
+*   **Live Sensor Data:** Instant visualization of **Temperature (°C)**, **pH levels**, and **Total Dissolved Solids (TDS)**.
+*   **Smart Indicators:** Visual status alerts (Optimal, Warning, Critical) based on configurable thresholds.
+*   **Responsive Design:** Fully optimized for Desktop, Tablet, and Mobile devices using Tailwind CSS.
 
-### 🎮 Device Control
-- **Relay Switching:** Manual toggle for lights, pumps, or CO2 regulators (Relay 1 & Relay 2).
-- **Scheduling:** Set automatic On/Off timers for connected devices directly from the UI.
+### 🧠 AI-Powered Analysis (Fuzzy Logic)
+*   **Intelligent Recommendations:** Uses the Mamdani Fuzzy Inference System to interpret complex sensor data.
+*   **Automated Decision Support:** Instead of raw numbers, get advice like "Perform Water Change," "Check Heater," or "Water Quality Optimal."
+*   **Configurable Rules:** Modify fuzzy logic rules and membership functions directly from the Settings dashboard.
 
-### ⚙️ Admin & Configuration
-- **Authentication:** Secure login modal for accessing control features and settings.
-- **Calibration Settings:** Adjust sensor readings via the dashboard.
-- **Fuzzy Rules Config:** Modify the logic rules and range definitions without touching the code.
-- **Dark Mode:** Fully supported dark/light theme toggling.
+### 🎮 Remote Device Control & Automation
+*   **IoT Relay Control:** Manually toggle lights, pumps, CO2 solenoids, or skimmers from anywhere.
+*   **Precision Scheduling:** Built-in timers allow you to schedule device operations (e.g., "Light ON at 08:00, OFF at 18:00").
+*   **Secure Access:** Protected by robust authentication to prevent unauthorized control.
+
+### 📈 Historical Data & Analytics
+*   **Interactive Charts:** Powered by **Recharts**, featuring multi-axis visualization to correlate Temperature, pH, and TDS trends over time.
+*   **Zoom & Pan:** Drill down into specific timeframes (1 Hour, 24 Hours, 1 Week) with an interactive brush tool.
+*   **CSV Export:** Download your water quality history for offline analysis or backup.
+
+### ⚙️ Advanced System Management
+*   **Sensor Calibration:** Calibrate your sensors via the UI without reflashing hardware code.
+*   **Dark Mode:** Built-in theme switcher for comfortable viewing at night.
+*   **Range Configuration:** Customize min/max safety limits for your specific tank inhabitants.
+
+---
+
+## 🏗️ System Architecture
+
+This project uses a modern, cost-effective architecture:
+
+1.  **Hardware (IoT Device):** ESP32/ESP8266 sends sensor data to the Google Apps Script Web App.
+2.  **Backend (Google Apps Script):** Acts as the API controller. It processes `doGet` and `doPost` requests and runs the Fuzzy Logic algorithm.
+3.  **Database (Google Sheets):** Stores historical data, configuration rules, and calibration values.
+4.  **Frontend (React + Vite):** The user interface hosted on Cloudflare Pages (or similar).
+5.  **Proxy Layer:** Uses Cloudflare Functions (or local proxy) to handle CORS and securely route requests to Google Apps Script.
+
+---
 
 ## 🛠️ Tech Stack
 
-**Frontend:**
-*   **React 19:** Component-based UI library.
-*   **TypeScript:** Type safety and developer experience.
-*   **Tailwind CSS:** Utility-first styling for a modern, responsive design.
-*   **Recharts:** Composable charting library for React.
-*   **Lucide React:** Beautiful, consistent icons.
-*   **React Router:** Single-page application routing.
+*   **Core:** React 19, TypeScript
+*   **Build Tool:** Vite
+*   **Styling:** Tailwind CSS, PostCSS
+*   **Icons:** Lucide React
+*   **Charts:** Recharts
+*   **Routing:** React Router DOM (HashRouter)
+*   **State Management:** React Context API
+*   **Backend:** Google Apps Script (GAS)
+*   **Data Storage:** Google Sheets
 
-**Backend (Serverless):**
-*   **Google Apps Script (GAS):** Handles API requests (`doGet`, `doPost`).
-*   **Google Sheets:** Acts as the database for logging sensor history and storing configuration.
+---
 
-## 🚀 Getting Started
+## 📦 Installation & Setup
 
-### Prerequisites
-*   Node.js (v16 or higher)
+### 1. Prerequisites
+*   Node.js (v18+)
 *   npm or yarn
 
-### Installation
+### 2. Frontend Setup
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/aquasmart-monitor.git
+cd aquasmart-monitor
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/aquasmart-monitor.git
-    cd aquasmart-monitor
-    ```
+# Install dependencies
+npm install
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+# Start development server
+npm run dev
+```
 
-3.  **Configure API Endpoint**
-    *   Open `services/api.ts`.
-    *   Replace `API_URL` with your deployed Google Apps Script Web App URL.
-
-4.  **Run the development server**
-    ```bash
-    npm start
-    # or
-    npm run dev
-    ```
-
-## ☁️ Backend Setup (Google Apps Script)
-
-Since this project uses a custom GAS backend, you need to set up the Google Sheet side:
-
+### 3. Backend Setup (Google Apps Script)
 1.  Create a new **Google Sheet**.
-2.  Go to **Extensions > Apps Script**.
-3.  Copy the backend code (IoT logic) into `Code.gs`.
-4.  **Deploy as Web App:**
-    *   Click `Deploy` > `New deployment`.
-    *   Select type: `Web app`.
-    *   Execute as: `Me`.
-    *   Who has access: `Anyone` (Required for the React app to access it without OAuth complexity).
-5.  Copy the generated **Web App URL** and paste it into `services/api.ts` in the frontend code.
+2.  Rename the tabs to: `Realtime`, `History`, `Rules`, `Ranges`, `Calibrations`.
+3.  Go to **Extensions > Apps Script**.
+4.  Copy the backend `.gs` code (not included in this repo, check the `backend` folder if available or contact author).
+5.  **Deploy as Web App:**
+    *   Description: "v1"
+    *   Execute as: **Me** (your email)
+    *   Who has access: **Anyone**
+6.  Copy the **Deployment URL**.
 
-## 📂 Project Structure
+### 4. Configuration (Environment Variables)
+This project uses a Proxy to communicate with Google Apps Script to avoid CORS issues and hide the backend URL.
 
-```
-src/
-├── components/       # UI Components (Dashboard, Settings, Charts)
-├── contexts/         # React Context (AuthContext)
-├── services/         # API handling (fetch logic for GAS)
-├── types/            # TypeScript interfaces
-├── App.tsx           # Main App component & Routing
-└── index.tsx         # Entry point
-```
+**For Local Development:**
+Create a `.env` file (or hardcode in `functions/api/proxy.ts` strictly for testing, though not recommended):
+
+**For Production (Cloudflare Pages):**
+1.  Deploy your repo to Cloudflare Pages.
+2.  Go to **Settings > Environment variables**.
+3.  Add the following variables:
+    *   `GAS_API_URL`: Your Google Apps Script Web App URL.
+    *   `ADMIN_USER`: Your desired admin username.
+    *   `ADMIN_PASS`: Your desired admin password.
+
+---
 
 ## 📸 Screenshots
 
-*(Add screenshots of your dashboard here, e.g., the dark mode view and the settings panel)*
+| Dashboard Light Mode | Dashboard Dark Mode |
+|:---:|:---:|
+| ![Light Mode](https://via.placeholder.com/400x250?text=Light+Mode) | ![Dark Mode](https://via.placeholder.com/400x250?text=Dark+Mode) |
+
+| Historical Charts | Settings & Calibration |
+|:---:|:---:|
+| ![Charts](https://via.placeholder.com/400x250?text=Charts) | ![Settings](https://via.placeholder.com/400x250?text=Settings) |
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-1.  Fork the project
+1.  Fork the Project
 2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Note:** The backend relies on a specific Google Sheet structure (Tabs for: Realtime, History, Rules, Ranges, Calibration). Ensure your Google Sheet columns match the expected JSON structure in `services/api.ts`.
+<p align="center">
+  Built with ❤️ by <a href="https://github.com/yourusername">Your Name</a>
+</p>
