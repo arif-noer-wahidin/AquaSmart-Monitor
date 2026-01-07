@@ -1,0 +1,18 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        slate: {
+          850: '#151f32', // Custom darker shade moved from inline config
+        }
+      }
+    }
+  },
+  plugins: [],
+}
