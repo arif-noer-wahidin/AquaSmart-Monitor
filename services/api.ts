@@ -1,18 +1,20 @@
 import { RealtimeData, HistoryItem, HistoryPeriod, RangeDefinition, FuzzyRule, CalibrationData, CalibrationItem } from '../types';
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzonNEYsPMDwDkCAT7yxSDQMmwbciWvD4SDS5GMg2KB3JBH64ynfy5RK2I-EpFAHM-cRg/exec";
+// Now pointing to our own Cloudflare Pages Function proxy
+const API_URL = "/api/proxy";
 
 // Helper for GET requests
 const fetchGet = async <T>(action: string, params: Record<string, string | number> = {}): Promise<T> => {
-  const url = new URL(API_URL);
+  const url = new URL(window.location.origin + API_URL); // Construct absolute URL for local proxy
   url.searchParams.append('action', action);
   Object.keys(params).forEach(key => url.searchParams.append(key, String(params[key])));
-  url.searchParams.append('_', new Date().getTime().toString()); // Cache buster to prevent stale data
+  url.searchParams.append('_', new Date().getTime().toString()); // Cache buster
   
   const response = await fetch(url.toString(), {
     method: 'GET',
-    redirect: 'follow',
-    credentials: 'omit' // Critical for GAS Web Apps to avoid CORS errors
+    headers: {
+      'Content-Type': 'application/json'
+    }
   });
   
   if (!response.ok) {
@@ -24,26 +26,14 @@ const fetchGet = async <T>(action: string, params: Record<string, string | numbe
 
 // Helper for POST requests
 const fetchPost = async (payload: any) => {
-  // We utilize URLSearchParams to send data as 'application/x-www-form-urlencoded'.
-  // This is the most robust method for Google Apps Script doPost(e) handler
-  // as it automatically populates e.parameter, bypassing complex JSON parsing issues.
-  const formData = new URLSearchParams();
-
-  Object.keys(payload).forEach(key => {
-    const value = payload[key];
-    // If the value is an object or array (like our 'data' payload), stringify it.
-    // The GAS backend script is already set up to parse these JSON strings inside handleUpdate*.
-    if (typeof value === 'object' && value !== null) {
-      formData.append(key, JSON.stringify(value));
-    } else {
-      formData.append(key, String(value));
-    }
-  });
-
+  // We send JSON to our Cloudflare Proxy. 
+  // The Proxy will convert it to form-data for Google Apps Script.
   const response = await fetch(API_URL, {
     method: 'POST',
-    body: formData,
-    credentials: 'omit' // Critical for GAS Web Apps to avoid CORS errors
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
@@ -80,8 +70,6 @@ export const setRelayStatus = (relay: 'relay1' | 'relay2', status: boolean) => {
 export const setTimer = (timerKey: 'timer1On' | 'timer1Off' | 'timer2On' | 'timer2Off', timeString: string) => {
   if (!timeString) return Promise.resolve({ status: 'skipped' });
   
-  // Construct a full date string because the backend does `new Date(params.timer...)`
-  // We use today's date + the time provided
   const now = new Date();
   const [hours, minutes] = timeString.split(':');
   
@@ -102,12 +90,9 @@ export const getFuzzyRules = () => fetchGet<FuzzyRule[]>('getFuzzyRules');
 export const updateFuzzyRules = (data: FuzzyRule[]) => fetchPost({ action: 'updateFuzzyRules', data: data });
 
 export const getCalibrations = async (): Promise<CalibrationData> => {
-  // GAS returns 2D array: [['Key', 'Value', 'Desc'], ...]
   const rawData = await fetchGet<any[][]>('getCalibrations');
-  
   if (!Array.isArray(rawData)) return [];
 
-  // Transform to objects for frontend use
   return rawData.map(row => ({
     key: String(row[0]),
     value: String(row[1]),
@@ -116,9 +101,6 @@ export const getCalibrations = async (): Promise<CalibrationData> => {
 };
 
 export const updateCalibrations = (data: CalibrationData) => {
-  // Transform objects back to 2D array for GAS: [['Key', 'Value', 'Desc']]
   const payload = data.map(item => [item.key, item.value, item.description]);
-  
-  // Use plural 'updateCalibrations' to match GAS switch case
   return fetchPost({ action: 'updateCalibrations', data: payload });
 };
