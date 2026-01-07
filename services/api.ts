@@ -11,7 +11,8 @@ const fetchGet = async <T>(action: string, params: Record<string, string | numbe
   
   const response = await fetch(url.toString(), {
     method: 'GET',
-    redirect: 'follow'
+    redirect: 'follow',
+    credentials: 'omit' // Critical for GAS Web Apps to avoid CORS errors
   });
   
   if (!response.ok) {
@@ -42,6 +43,7 @@ const fetchPost = async (payload: any) => {
   const response = await fetch(API_URL, {
     method: 'POST',
     body: formData,
+    credentials: 'omit' // Critical for GAS Web Apps to avoid CORS errors
   });
 
   if (!response.ok) {

@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   Legend, Brush
 } from 'recharts';
-import { Activity, Droplets, Thermometer, Zap, Clock, AlertTriangle, RefreshCw, Lock, Loader2 } from 'lucide-react';
+import { Activity, Droplets, Thermometer, Zap, Clock, AlertTriangle, RefreshCw, Lock, Loader2, Download } from 'lucide-react';
 import { getRealtimeData, getHistoryData, setRelayStatus, setTimer } from '../services/api';
 import { RealtimeData, HistoryItem, HistoryPeriod } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,7 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>('1hour');
   
   // Loading states
-  const [loading, setLoading] = useState(false); // Initial/History load
+  const [loading, setLoading] = useState(true); // Initial/History load
   const [refreshing, setRefreshing] = useState(false); // Background refresh
   const [processing, setProcessing] = useState<{[key: string]: boolean}>({}); // Button specific loading
 
@@ -214,6 +214,43 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
     } finally {
        setProcessing(prev => ({ ...prev, [key]: false }));
     }
+  };
+
+  const handleExportCSV = () => {
+    if (!history || history.length === 0) return;
+
+    // Define CSV headers
+    const headers = ['Timestamp', 'Date', 'Time', 'Temperature (C)', 'pH', 'TDS (ppm)'];
+    
+    // Create CSV rows
+    const csvContent = [
+      headers.join(','),
+      ...history.map(item => {
+        const date = item.rawDate instanceof Date ? item.rawDate : new Date(item.timestamp);
+        // Handle potential commas in string fields by quoting
+        const safeDateStr = date.toLocaleDateString(); 
+        const safeTimeStr = date.toLocaleTimeString();
+
+        return [
+          `"${item.timestamp}"`, // Full ISO
+          `"${safeDateStr}"`,
+          `"${safeTimeStr}"`,
+          item.suhu,
+          item.ph,
+          item.tds
+        ].join(',');
+      })
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `aquasmart_history_${historyPeriod}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (!realtime) {
@@ -455,27 +492,38 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
 
       {/* History Charts - Combined Single Chart with Multi-Axis */}
       <Card title="Historical Data">
-        <div className="flex gap-2 mb-6">
-          {(['1hour', '1day', '1week'] as HistoryPeriod[]).map(p => (
-            <button
-              key={p}
-              onClick={() => setHistoryPeriod(p)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                historyPeriod === p 
-                ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20' 
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              {p === '1hour' ? 'Last Hour' : p === '1day' ? 'Last 24h' : 'Last Week'}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex gap-2">
+            {(['1hour', '1day', '1week'] as HistoryPeriod[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setHistoryPeriod(p)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  historyPeriod === p 
+                  ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20' 
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                {p === '1hour' ? 'Last Hour' : p === '1day' ? 'Last 24h' : 'Last Week'}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleExportCSV}
+            disabled={loading || history.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
         </div>
 
-        <div className="w-full h-[450px]">
+        <div className="w-full h-[450px] min-w-0">
           {loading ? (
              <div className="h-full flex items-center justify-center text-slate-500">Loading chart data...</div>
           ) : (
-             <ResponsiveContainer width="100%" height="100%">
+             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={history} margin={{ top: 20, right: 10, left: 10, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} opacity={0.1} vertical={true} />
                 <XAxis 
