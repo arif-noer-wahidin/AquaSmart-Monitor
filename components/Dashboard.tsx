@@ -100,7 +100,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark }) => {
       const formatTime = (isoString: string) => {
         if (!isoString) return '';
         const d = new Date(isoString);
-        return isNaN(d.getTime()) ? '' : d.toISOString().substring(11, 16);
+        if (isNaN(d.getTime())) return '';
+        
+        // Fix: Use getHours() and getMinutes() to get Local Time instead of UTC
+        const hours = d.getHours().toString().padStart(2, '0');
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
       };
 
       const activeElement = document.activeElement;
